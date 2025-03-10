@@ -72,7 +72,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
         }
       }}
     >
-      <div className="relative max-w-5xl max-h-[90vh] lightbox-content animate-scale-in">
+      <div className="relative max-w-5xl max-h-[90vh] lightbox-content animate-scale-in overflow-y-auto">
         <img 
           src={currentImage.url} 
           alt={currentImage.caption || 'Portfolio image'} 

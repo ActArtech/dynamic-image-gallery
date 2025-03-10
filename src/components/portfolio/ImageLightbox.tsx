@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { PortfolioImage } from './PortfolioDetail';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,6 +25,11 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  
+  // For wheel scroll debouncing
+  const [isScrolling, setIsScrolling] = useState(false);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Lock body scroll when lightbox is open
@@ -69,6 +74,73 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     }
   }, [currentIndex]);
 
+  // Handle wheel event for scrolling through images
+  const handleWheel = (e: React.WheelEvent) => {
+    if (isScrolling) return;
+    
+    // Check if content is scrollable vertically
+    const scrollableContent = contentRef.current;
+    const imageContainer = imageContainerRef.current;
+    
+    if (!scrollableContent || !imageContainer) return;
+    
+    const isContentScrollable = 
+      scrollableContent.scrollHeight > scrollableContent.clientHeight;
+    
+    // If content is scrollable and not at top/bottom, allow normal scrolling
+    if (isContentScrollable) {
+      const isAtTop = scrollableContent.scrollTop === 0;
+      const isAtBottom = 
+        scrollableContent.scrollTop + scrollableContent.clientHeight >= 
+        scrollableContent.scrollHeight - 5; // Small tolerance
+      
+      // If at top and scrolling up OR at bottom and scrolling down, navigate images
+      if ((isAtTop && e.deltaY < 0) || (isAtBottom && e.deltaY > 0)) {
+        e.preventDefault();
+        if (e.deltaY > 0) {
+          onNext();
+        } else {
+          onPrevious();
+        }
+        
+        // Debounce scrolling to prevent rapid image changes
+        setIsScrolling(true);
+        if (scrollTimeout.current) {
+          clearTimeout(scrollTimeout.current);
+        }
+        scrollTimeout.current = setTimeout(() => {
+          setIsScrolling(false);
+        }, 300); // 300ms delay between scroll actions
+      }
+    } else {
+      // If content is not scrollable, always navigate with wheel
+      e.preventDefault();
+      if (e.deltaY > 0) {
+        onNext();
+      } else {
+        onPrevious();
+      }
+      
+      // Debounce scrolling
+      setIsScrolling(true);
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+      scrollTimeout.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 300);
+    }
+  };
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
+  }, []);
+
   if (!isOpen || !currentImage) return null;
 
   return (
@@ -85,9 +157,13 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
       <div 
         ref={contentRef}
         className="relative w-full max-w-5xl h-[calc(100vh-140px)] flex flex-col items-center"
+        onWheel={handleWheel}
       >
         <ScrollArea className="w-full h-full rounded-md">
-          <div className="flex justify-center p-4">
+          <div 
+            ref={imageContainerRef}
+            className="flex justify-center p-4"
+          >
             <img 
               src={currentImage.url} 
               alt={currentImage.caption || 'Portfolio image'} 

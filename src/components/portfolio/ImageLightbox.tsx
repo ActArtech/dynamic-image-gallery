@@ -2,6 +2,7 @@
 import React, { useEffect, useRef } from 'react';
 import { PortfolioImage } from './PortfolioDetail';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ImageLightboxProps {
   images: PortfolioImage[];
@@ -23,6 +24,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
   onPrevious
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Lock body scroll when lightbox is open
@@ -60,31 +62,47 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     };
   }, [isOpen, onClose, onNext, onPrevious]);
 
+  // Reset scroll position when changing images
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = 0;
+    }
+  }, [currentIndex]);
+
   if (!isOpen || !currentImage) return null;
 
   return (
     <div 
       ref={overlayRef}
-      className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex flex-col justify-center items-center lightbox-overlay"
+      className="fixed inset-0 bg-black bg-opacity-90 z-[100] flex flex-col justify-center items-center"
       onClick={(e) => {
         if (e.target === overlayRef.current) {
           onClose();
         }
       }}
+      data-testid="lightbox-overlay"
     >
-      <div className="relative max-w-5xl max-h-[90vh] lightbox-content animate-scale-in overflow-y-auto">
-        <img 
-          src={currentImage.url} 
-          alt={currentImage.caption || 'Portfolio image'} 
-          className="max-h-[80vh] max-w-full object-contain rounded"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = '/placeholder.svg';
-          }}
-        />
+      <div 
+        ref={contentRef}
+        className="relative w-full max-w-5xl h-[calc(100vh-140px)] flex flex-col items-center"
+      >
+        <ScrollArea className="w-full h-full rounded-md">
+          <div className="flex justify-center p-4">
+            <img 
+              src={currentImage.url} 
+              alt={currentImage.caption || 'Portfolio image'} 
+              className="max-w-full object-contain animate-scale-in"
+              onError={(e) => {
+                console.log(`Lightbox image failed to load: ${currentImage.url}`);
+                (e.target as HTMLImageElement).src = '/placeholder.svg';
+              }}
+            />
+          </div>
+        </ScrollArea>
 
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105"
+          className="absolute top-4 right-4 p-2 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105 z-50"
           aria-label="Close lightbox"
         >
           <X className="w-6 h-6" />
@@ -95,7 +113,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
             e.stopPropagation();
             onPrevious();
           }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105"
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105 z-50"
           aria-label="Previous image"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -106,7 +124,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
             e.stopPropagation();
             onNext();
           }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105"
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full backdrop-blur-md bg-black/50 text-white hover:bg-black/70 transition-all duration-300 transform hover:scale-105 z-50"
           aria-label="Next image"
         >
           <ChevronRight className="w-6 h-6" />
@@ -114,7 +132,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
       </div>
 
       {currentImage.caption && (
-        <div className="mt-6 text-white text-center max-w-xl px-4 animate-fade-in">
+        <div className="mt-4 text-white text-center max-w-xl px-4 animate-fade-in">
           <p className="text-xl font-light">{currentImage.caption}</p>
         </div>
       )}

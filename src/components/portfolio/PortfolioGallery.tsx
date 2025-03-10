@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getPortfolioFolders, getPortfolioThumbnails, checkImageExists } from '@/lib/portfolio-utils';
+import { getPortfolioFolders, getPortfolioThumbnails } from '@/lib/portfolio-utils';
 
 interface GalleryItemProps {
   folderName: string;
@@ -30,9 +30,6 @@ const GalleryItem: React.FC<GalleryItemProps> = ({ folderName, thumbnails }) => 
                   alt={`${folderName} thumbnail ${i + 1}`}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   loading="lazy"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
                 />
               </div>
             ))}
@@ -76,18 +73,7 @@ const PortfolioGallery = () => {
         
         for (const folder of portfolioFolders) {
           const thumbnails = await getPortfolioThumbnails(folder);
-          
-          // Check if thumbnails exist
-          const validatedThumbnails = await Promise.all(
-            thumbnails.map(async (url) => {
-              const exists = await checkImageExists(url);
-              return { url, exists };
-            })
-          );
-          
-          thumbnailsMap[folder] = validatedThumbnails
-            .filter(({ exists }) => exists)
-            .map(({ url }) => url);
+          thumbnailsMap[folder] = thumbnails;
         }
         
         setFolderThumbnails(thumbnailsMap);

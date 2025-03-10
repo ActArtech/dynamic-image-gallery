@@ -34,16 +34,7 @@ const PortfolioDetail = () => {
       try {
         setLoading(true);
         const fetchedImages = await getPortfolioImages(folderName);
-        
-        // Filter out images that don't exist
-        const validatedImages = await Promise.all(
-          fetchedImages.map(async (img) => {
-            const exists = await checkImageExists(img.url);
-            return { img, exists };
-          })
-        );
-        
-        setImages(validatedImages.filter(({ exists }) => exists).map(({ img }) => img));
+        setImages(fetchedImages);
         setLoading(false);
       } catch (err) {
         console.error("Error loading portfolio images:", err);
@@ -136,30 +127,25 @@ const PortfolioDetail = () => {
           <p className="text-xl text-gray-500">No images found in this collection.</p>
         </div>
       ) : (
-        <div className="gallery-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {images.map((image, index) => (
             <div 
               key={index}
-              className={`gallery-item animate-fade-in`}
-              style={{ 
-                animationDelay: `${index * 0.05}s`,
-                gridColumn: index % 3 === 0 ? 'span 2' : 'span 1',
-                gridRow: index % 5 === 0 ? 'span 2' : 'span 1'
-              }}
+              className="group relative overflow-hidden rounded-xl aspect-[4/3] cursor-pointer animate-fade-in transition-transform duration-300 hover:scale-[1.02]"
+              style={{ animationDelay: `${index * 0.05}s` }}
               onClick={() => openLightbox(index)}
             >
               <img 
-                src={image.url}
+                src={image.url} 
                 alt={image.caption || `Gallery image ${index + 1}`}
-                className="animate-image-loaded object-cover w-full h-full"
+                className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-[1.05]"
                 loading="lazy"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/placeholder.svg';
-                }}
               />
               {image.caption && (
-                <div className="gallery-caption">
-                  <p className="text-white font-medium">{image.caption}</p>
+                <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end">
+                  <div className="p-4 w-full">
+                    <h3 className="text-white font-medium text-lg">{image.caption}</h3>
+                  </div>
                 </div>
               )}
             </div>

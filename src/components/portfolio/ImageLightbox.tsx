@@ -23,6 +23,7 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
   onPrevious
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Lock body scroll when lightbox is open
@@ -60,6 +61,13 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
     };
   }, [isOpen, onClose, onNext, onPrevious]);
 
+  // Reset scroll position when changing images
+  useEffect(() => {
+    if (imageContainerRef.current) {
+      imageContainerRef.current.scrollTop = 0;
+    }
+  }, [currentIndex]);
+
   if (!isOpen || !currentImage) return null;
 
   return (
@@ -72,11 +80,14 @@ const ImageLightbox: React.FC<ImageLightboxProps> = ({
         }
       }}
     >
-      <div className="relative max-w-5xl max-h-[90vh] lightbox-content animate-scale-in overflow-y-auto">
+      <div 
+        ref={imageContainerRef}
+        className="relative w-full max-w-5xl max-h-[90vh] overflow-auto flex justify-center items-start p-4 md:p-8 lightbox-content animate-scale-in"
+      >
         <img 
           src={currentImage.url} 
           alt={currentImage.caption || 'Portfolio image'} 
-          className="max-h-[80vh] max-w-full object-contain rounded"
+          className="max-w-full object-contain rounded shadow-xl"
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/placeholder.svg';
           }}
